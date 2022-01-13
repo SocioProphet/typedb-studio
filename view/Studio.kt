@@ -65,7 +65,7 @@ object Studio {
     fun main(args: Array<String>) {
         var logger: KLogger? = null
         try {
-            enableAntiAliasing()
+            configureProperties()
             Message.loadClasses()
             UserDataDirectory.initialise()
             logger = logger {}
@@ -78,9 +78,12 @@ object Studio {
         }
     }
 
-    private fun enableAntiAliasing() {
+    private fun configureProperties() {
+        // Enable Anti-Aliasing
         System.setProperty("awt.useSystemAAFontSettings", "on")
         System.setProperty("swing.aatext", "true")
+        // Enable choosing directory through FileDialog on MacOS
+        System.setProperty("apple.awt.fileDialogForDirectories", "true");
     }
 
     private fun application(window: @Composable (onExit: () -> Unit) -> Unit) {
