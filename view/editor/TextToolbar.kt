@@ -18,75 +18,116 @@
 
 package com.vaticle.typedb.studio.view.editor
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.vaticle.typedb.studio.view.common.Label
 import com.vaticle.typedb.studio.view.common.component.Form
+import com.vaticle.typedb.studio.view.common.component.Form.TextInput
 import com.vaticle.typedb.studio.view.common.component.Icon
 import com.vaticle.typedb.studio.view.common.component.Separator
 import com.vaticle.typedb.studio.view.common.theme.Theme
 
 object TextToolbar {
 
-    private val MAX_WIDTH = 500.dp
+    private val MAX_WIDTH = 800.dp
     private val MIN_WIDTH = 260.dp
-    private val ROW_HEIGHT = 28.dp
+    private val INPUT_MIN_HEIGHT = 28.dp
+    private val INPUT_MAX_HEIGHT = 120.dp
     private val BUTTON_AREA_WIDTH = 160.dp
     private val BUTTON_HEIGHT = 24.dp
     private val BUTTON_SPACING = 4.dp
 
+    private fun toolBarHeight(state: TextFinder): Dp {
+        var height = Separator.WEIGHT + finderInputHeight(state)
+        if (state.showReplacer) height += replacerInputHeight(state)
+        return height
+    }
+
+    private fun finderInputHeight(state: TextFinder): Dp {
+        return state.findTextHeight.coerceIn(INPUT_MIN_HEIGHT, INPUT_MAX_HEIGHT)
+    }
+
+    private fun replacerInputHeight(state: TextFinder): Dp {
+        return state.replaceTextHeight.coerceIn(INPUT_MIN_HEIGHT, INPUT_MAX_HEIGHT)
+    }
+
     @Composable
     internal fun Area(state: TextFinder) {
-        Row {
-            FindAndReplaceTextInputs(state)
-            Separator.Vertical()
-            FinderToggles(state)
-            Buttons(state)
-            Separator.Horizontal()
+        Box { // We render a character to find out the default height of a line for the given font
+            Text(
+                text = "0", style = Theme.typography.body1,
+                onTextLayout = { state.lineHeight = Theme.toDP(it.size.height, state.density) }
+            )
+            // TODO: figure out how to set min width to MIN_WIDTH
+            Row(modifier = Modifier.widthIn(max = MAX_WIDTH).height(toolBarHeight(state))) {
+                Column(Modifier.weight(1f)) {
+                    FinderTextInput(state)
+                    if (state.showReplacer) {
+                        Separator.Horizontal()
+                        ReplacerTextInput(state)
+                    }
+                }
+                Separator.Vertical()
+                Buttons(state)
+            }
         }
+        Separator.Horizontal()
     }
 
     @OptIn(ExperimentalComposeUiApi::class)
     @Composable
-    private fun FindAndReplaceTextInputs(state: TextFinder) {
-        Column(Modifier.width(MAX_WIDTH)) {
-            Form.TextInput(
-                value = state.findText,
-                placeholder = Label.FIND,
-                onValueChange = { state.findText = it },
-                leadingIcon = Icon.Code.MAGNIFYING_GLASS,
-                shape = null,
-                border = null,
-                modifier = Modifier.weight(1f),
-                // TODO: figure out how to set min width to MIN_WIDTH
-            )
-            if (state.showReplacer) {
-                Separator.Horizontal()
-                Form.TextInput(
-                    value = state.replaceText,
-                    placeholder = Label.REPLACE,
-                    onValueChange = { state.replaceText = it },
-                    leadingIcon = Icon.Code.RIGHT_LEFT,
-                    shape = null,
-                    border = null,
-                    modifier = Modifier.weight(1f),
-                    // TODO: figure out how to set min width to MIN_WIDTH
-                )
+    private fun FinderTextInput(state: TextFinder) {
+        TextInput(
+            value = state.findText,
+            placeholder = Label.FIND,
+            onValueChange = { state.findText = it },
+            modifier = Modifier.height(finderInputHeight(state)),
+            leadingIcon = Icon.Code.MAGNIFYING_GLASS,
+            singleLine = false,
+            shape = null,
+            border = null,
+        )
+    }
+
+    @OptIn(ExperimentalComposeUiApi::class)
+    @Composable
+    private fun ReplacerTextInput(state: TextFinder) {
+        TextInput(
+            value = state.replaceText,
+            placeholder = Label.REPLACE,
+            onValueChange = { state.replaceText = it },
+            modifier = Modifier.height(replacerInputHeight(state)),
+            leadingIcon = Icon.Code.RIGHT_LEFT,
+            singleLine = false,
+            shape = null,
+            border = null,
+        )
+    }
+
+    @Composable
+    private fun Buttons(state: TextFinder) {
+        Row(modifier = Modifier.offset(x = -INPUT_MIN_HEIGHT - Separator.WEIGHT)) {
+            FinderToggles(state)
+            Separator.Vertical()
+            Column(Modifier.width(BUTTON_AREA_WIDTH)) {
+                FinderButtons(state)
+                ReplacerButtons(state)
             }
         }
     }
@@ -96,60 +137,86 @@ object TextToolbar {
         Form.IconButton(
             Icon.Code.FONT_CASE,
             onClick = { state.toggleCaseSensitive() },
-            modifier = Modifier.size(ROW_HEIGHT),
+            modifier = Modifier.size(INPUT_MIN_HEIGHT),
             iconColor = if (state.isCaseSensitive) Theme.colors.secondary else Theme.colors.icon,
             bgColor = Theme.colors.surface,
             rounded = false
         )
     }
 
-    private fun Buttons(state: TextFinder) {
-        Column {
-            FinderButtons(state)
-            ReplacerButton(state)
-        }
-    }
-
     @Composable
     private fun FinderButtons(state: TextFinder) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.height(ROW_HEIGHT).width(BUTTON_AREA_WIDTH)
+            modifier = Modifier.height(INPUT_MIN_HEIGHT)
         ) {
             Spacer(Modifier.width(BUTTON_SPACING))
-            Form.IconButton(
-                icon = Icon.Code.CHEVRON_DOWN,
-                onClick = { state },
-                modifier = Modifier.size(ROW_HEIGHT),
-                bgColor = Color.Transparent,
-                rounded = false
-            )
-            Form.IconButton(
-                icon = Icon.Code.CHEVRON_UP,
-                onClick = { state },
-                modifier = Modifier.size(ROW_HEIGHT),
-                bgColor = Color.Transparent,
-                rounded = false
-            )
+            FindNextButton(state)
+            FindPreviousButton(state)
             Spacer(Modifier.width(BUTTON_SPACING))
-            Form.Text(
-                value = state.status,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
-            )
+            FinderStatus(state, Modifier.weight(1f))
         }
     }
 
     @Composable
-    private fun ReplacerButton(state: TextFinder) {
+    private fun FinderStatus(state: TextFinder, modifier: Modifier) {
+        Form.Text(
+            value = state.status,
+            overflow = TextOverflow.Ellipsis,
+            modifier = modifier
+        )
+    }
+
+    @Composable
+    private fun FindPreviousButton(state: TextFinder) {
+        Form.IconButton(
+            icon = Icon.Code.CHEVRON_UP,
+            onClick = { state.findPrevious() },
+            modifier = Modifier.size(INPUT_MIN_HEIGHT),
+            bgColor = Color.Transparent,
+            rounded = false
+        )
+    }
+
+    @Composable
+    private fun FindNextButton(state: TextFinder) {
+        Form.IconButton(
+            icon = Icon.Code.CHEVRON_DOWN,
+            onClick = { state.findNext() },
+            modifier = Modifier.size(INPUT_MIN_HEIGHT),
+            bgColor = Color.Transparent,
+            rounded = false
+        )
+    }
+
+    @Composable
+    private fun ReplacerButtons(state: TextFinder) {
         Row(
             verticalAlignment = Alignment.Top,
-            modifier = Modifier.height(ROW_HEIGHT).width(BUTTON_AREA_WIDTH)
+            modifier = Modifier.height(INPUT_MIN_HEIGHT)
         ) {
             Spacer(Modifier.width(BUTTON_SPACING))
-            Form.TextButton(Label.REPLACE, { state }, Modifier.height(BUTTON_HEIGHT))
+            ReplaceNextButton(state)
             Spacer(Modifier.width(BUTTON_SPACING))
-            Form.TextButton(Label.REPLACE_ALL, { state }, Modifier.height(BUTTON_HEIGHT))
+            ReplaceAllButton(state)
         }
+    }
+
+    @Composable
+    private fun ReplaceNextButton(state: TextFinder) {
+        Form.TextButton(
+            text = Label.REPLACE,
+            onClick = { state.replaceNext() },
+            modifier = Modifier.height(BUTTON_HEIGHT)
+        )
+    }
+
+    @Composable
+    private fun ReplaceAllButton(state: TextFinder) {
+        Form.TextButton(
+            text = Label.REPLACE_ALL,
+            onClick = { state.replaceAll() },
+            modifier = Modifier.height(BUTTON_HEIGHT)
+        )
     }
 }

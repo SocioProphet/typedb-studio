@@ -117,7 +117,7 @@ object Form {
     fun Field(label: String, fieldInput: @Composable () -> Unit) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(value = label, modifier = LABEL_MODIFIER)
-            Column(modifier = INPUT_MODIFIER) { fieldInput() }
+            Box(modifier = INPUT_MODIFIER) { fieldInput() }
         }
     }
 
@@ -289,7 +289,6 @@ object Form {
         value: String,
         placeholder: String,
         onValueChange: (String) -> Unit,
-        maxLines: Int = 1,
         singleLine: Boolean = true,
         readOnly: Boolean = false,
         enabled: Boolean = true,
@@ -314,7 +313,6 @@ object Form {
             onValueChange = onValueChange,
             readOnly = readOnly,
             singleLine = singleLine,
-            maxLines = maxLines,
             enabled = enabled,
             cursorBrush = SolidColor(Theme.colors.secondary),
             textStyle = textStyle.copy(color = fadeable(Theme.colors.onSurface, !enabled)),
@@ -325,7 +323,7 @@ object Form {
                         Icon.Render(icon = it)
                         Spacer(Modifier.width(ICON_SPACING))
                     }
-                    Box(Modifier.height(FIELD_HEIGHT).weight(1f), contentAlignment = Alignment.CenterStart) {
+                    Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
                         innerTextField()
                         if (value.isEmpty()) Text(value = placeholder, color = fadeable(Theme.colors.onSurface, true))
                     }

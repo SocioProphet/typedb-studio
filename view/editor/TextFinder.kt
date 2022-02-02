@@ -22,15 +22,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.vaticle.typedb.studio.state.project.File
 
 internal class TextFinder(private val file: File, private val target: InputTarget) {
 
+    internal var lineHeight by mutableStateOf(0.dp)
     internal val content: SnapshotStateList<String> get() = file.content
     internal var showFinder by mutableStateOf(false)
     internal var showReplacer by mutableStateOf(false)
     internal var findText by mutableStateOf("")
     internal var replaceText by mutableStateOf("")
+    internal val findTextHeight: Dp get() = lineHeight * findText.split("\n").size
+    internal val replaceTextHeight: Dp get() = lineHeight * replaceText.split("\n").size
     internal var isCaseSensitive by mutableStateOf(false)
     internal val density: Float get() = target.density
     internal val status: String get() = "11 / 23462" // TODO
@@ -48,5 +53,21 @@ internal class TextFinder(private val file: File, private val target: InputTarge
 
     fun toggleCaseSensitive() {
         isCaseSensitive = !isCaseSensitive
+    }
+
+    fun findNext() {
+        // TODO
+    }
+
+    fun findPrevious() {
+        // TODO
+    }
+
+    fun replaceNext() {
+        // TODO
+    }
+
+    fun replaceAll() {
+        // TODO
     }
 }
